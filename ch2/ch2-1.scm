@@ -173,9 +173,9 @@
   (lambda (m) (m x y)))
 
 ; car - takes a proc (z) that when given a proc as its only arg applies the
-; two parameters it was defined with to *that* proc. The proc z is given is 
+; two parameters it was defined with to *that* proc. The proc z is given is
 ; (lambda (p q) p), simply a proc that takes two args and returns the first.
-; So z apples its two params to it (x is passed in as p, y as q), and it 
+; So z apples its two params to it (x is passed in as p, y as q), and it
 ; returns p, or x.
 (define (car z)
   (z (lambda (p q) p)))
@@ -224,5 +224,131 @@
   (num-divs a 3))
 
 ; ex 2.6 - Church Numerals
+;
+; 'A Church numeral is a procedure that takes one argument, and that argument is
+; itself another procedure that also takes one argument.' - BTL
+
+(define (inc n) (+ n 1))
+
+(define zero (lambda (f) (lambda (x) x)))
+
+(define (add-1 n)
+  (lambda (f)
+    (lambda (x)
+      (f ((n f) x)))))
+
+(define one
+  (lambda (f)
+    (lambda (x)
+      (f x)
+    )
+  )
+)
+
+(define two
+  (lambda (f)
+    (lambda (x)
+      (f (f x))
+    )
+  )
+)
+
+(define (add m n)
+  (lambda (f)
+    (lambda (x)
+      (((m)f)x) (((n)f)x)))
+)
+
+; subs: (add-1 zero)
+
+; sustitute zero for n in add-1
+(lambda (f)
+  (lambda (x)
+    (f ((zero f) x))))
+
+; (zero f) becomes (lambda (x) x)
+(lambda (f)
+  (lambda (x)
+    (f ((lambda (x) x) x))))
 
 
+; and since passing x (the third one) to a function that takes x (the first)
+; and returns x (the second) gives x, we have:
+(lambda (f)
+  (lambda (x)
+    (f x)))
+;which is indeed the church numeral 'one', as we defined it
+; e.g. ((two inc)6) gives 8
+
+; apply x to f, n times, and apply the result to f, m times, for m+n times
+(define (add-church m n)
+  (lambda (f)
+    (lambda (x)
+      ((m f) ((n f)x))
+    )
+  )
+)
+
+(define (mul-church m n)
+  (lambda (f)
+    (lambda (x)
+    ; we're looking for ((two(three inc))0)
+    ((m (n f))x)
+    )
+  )
+)
+
+; subs: mul-church
+; apply x to inc three times, and apply the result to inc three more times
+;((two (three inc)) 0)
+;(
+;  (
+;    (lambda (x) ((three inc) ((three inc) x)))
+;  )
+;  0
+;)
+
+; 2.1.4 - Interval Arithmetic (or, manipulating inexact quantities)
+
+(define (add-interval x y)
+  (make-interval (+ (lower-bound x) (lower-bound y))
+                 (+ (upper-bound x) (upper-bound y))))
+
+(define (mul-interval x y)
+  (let ((p1 (* (lower-bound x) (lower-bound y)))
+        (p2 (* (lower-bound x) (upper-bound y)))
+        (p3 (* (upper-bound x) (lower-bound y)))
+        (p4 (* (upper-bound x) (upper-bound y))))
+    (make-interval (min p1 p2 p3 p4) (max p1 p2 p3 p4))))
+
+(define (div-interval x y)
+  (mul-interval x (make-interval (/ 1.0 (upper-bound y))
+                                 (/ 1.0 (lower-bound y)))))
+
+(define (make-interval a b) (cons a b))
+
+(define (upper-bound a) (cdr a))
+(define (lower-bound a) (car a))
+
+(define (sub-interval x y)
+  (make-interval (- (lower-bound x) (upper-bound y))
+                 (- (upper-bound x) (lower-bound y))))
+
+(define (width-interval a) (/ (- (upper-bound a) (lower-bound a)) 2.0))
+
+; dividing by an interval that spans zero *could* cause a div by zero
+(define (div-interval x y)
+  (define (spans-zero? a)
+    (and (<= (lower-bound a) 0)
+         (>= (upper-bound a) 0)))
+  (if (spans-zero-interval? y)
+      (error "Zero-spanning denominator")
+      (mul-interval x (make-interval (/ 1.0 (upper-bound y))
+                                     (/ 1.0 (lower-bound y)))))
+)
+
+; equivalent algebraic expressions involving intervalic terms may result in
+; different values due to repetition of variable intervals. Not all functions
+; can be written to avoid such repetition. see: 'the dependency problem'
+
+; done
