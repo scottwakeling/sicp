@@ -150,4 +150,80 @@
   )
 )
 
-; done
+
+; 2.2.2 - Hierarchical Structures
+
+; count-leaves if a tree is count-leaves of the car of three plus count-leaves
+; of the cdr of three
+; count-leaves of a leaf is 1
+
+(define (count-leaves t)
+  (cond ((null? t) 0)
+        ((not (pair? t)) 1)
+        (else (+ (count-leaves (car t))
+                 (count-leaves (cdr t))))))
+
+; ex 2.24
+(list 1 (list 2 (list 3 4)))
+;Value 39: (1 (2 (3 4)))
+
+
+; ex 2.25
+
+(cdr (car (cdr (cdr (list 1 3 (list 5 7) 9)))))
+;Value 42: (7)
+
+(car (car (list (list 7))))
+;Value: 7
+
+(car (car (cdr (car (cdr (car (cdr (car (cdr (car (cdr (car (cdr (list 1 (list 2 (list 3 (list 4 (list 5 (list 5 (list 7))))))))))))))))))))
+;Value: 7
+
+; ex 2.26
+
+(define x (list 1 2 3))
+;Value: x
+
+(define y (list 4 5 6))
+;Value: y
+
+(append x y)
+;Value 53: (1 2 3 4 5 6)
+
+(cons x y)
+;Value 54: ((1 2 3) 4 5 6)
+
+(list x y)
+;Value 55: ((1 2 3) (4 5 6))
+
+; ex 2.27
+(define (deep-reverse items)
+  (cond ((null? items) items)
+        ((pair? (car items))
+          (append (deep-reverse (cdr items)) (list (deep-reverse (car items)))))
+        (else (append (deep-reverse (cdr items)) (list (car items))))))
+;(define y (list 44 (list (list 1 2) (list 3 4 5) 55 (list 66 77 88))))
+;;Value: y
+;(deep-reverse y)
+;;Value 20: (((88 77 66) 55 (5 4 3) (2 1)) 44)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+;
