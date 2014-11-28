@@ -153,7 +153,7 @@
 
 ; 2.2.2 - Hierarchical Structures
 
-; count-leaves if a tree is count-leaves of the car of three plus count-leaves
+; count-leaves of a tree is count-leaves of the car of three plus count-leaves
 ; of the cdr of three
 ; count-leaves of a leaf is 1
 
@@ -207,23 +207,45 @@
 ;(deep-reverse y)
 ;;Value 20: (((88 77 66) 55 (5 4 3) (2 1)) 44)
 
+; ex 2.28
 
+; visit leaf nodes
+(define (fringe t)
+  (define visit display)
+  (cond ((null? t) 0)
+        ((not (pair? t)) (visit t))
+        (else (fringe (car t))
+              (fringe (cdr t)))))
 
+; collate leaf nodes
+(define (fringe t)
+  (cond ((null? t) t)
+        ((not (pair? t)) (list t))
+        (else (append (fringe (car t)) (fringe (cdr t))))))
 
+; ex 2.29
 
+(define (make-mobile left right) (list left right))
+(define (make-branch length payload) (list length payload))
 
+(define (left-branch mobile) (car mobile))
+(define (right-branch mobile) (car (cdr mobile)))
 
+(define (branch-length branch) (car branch))
+(define (branch-payload branch) (car (cdr branch)))
 
+(define (branch-weight b)
+  (cond ((pair? (branch-payload b))
+   (total-weight (branch-payload b)))
+  (else (branch-payload b))))
 
+(define (branch-torque branch) (* (branch-length branch) (branch-weight branch)))
 
+(define (total-weight mobile)
+  (cond ((null? mobile) 0)
+        (else (+ (branch-weight (left-branch mobile))
+                  (branch-weight (right-branch mobile))))))
 
-
-
-
-
-
-
-
-
-
-;
+(define (mobile-balanced? m)
+  (= (branch-torque (left-branch m)) (branch-torque (right-branch m)))
+)
