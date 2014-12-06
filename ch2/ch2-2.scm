@@ -292,8 +292,11 @@
 
 ; ex 2.32
 
-; Calculate the power-set of the set S
-;  http://en.wikipedia.org/wiki/Power_set
+; Calculate the power-set of the set S, http://en.wikipedia.org/wiki/Power_set
+; (power-set (list 1 (list 2 3)))
+; Value 29: (() ((2 3)) (1) (1 (2 3)))
+; (power-set (list 1 2 3))
+; Value 22: (() (3) (2) (2 3) (1) (1 3) (1 2) (1 2 3))
 (define (power-set S)
   (if (null? S)
     (list ())
@@ -302,6 +305,51 @@
 
 
 ; 2.2.3 - Sequences as Conventional Interfaces
+
+(define (accumulate op initial sequence)
+  (if (null? sequence)
+    initial
+    (op (car sequence)
+      (accumulate op initial (cdr sequence)))))
+
+
+; ex 2.33
+
+(define (map p sequence)
+  (accumulate (lambda (x y) (cons (p x) y)) () sequence))
+
+(define (append seq1 seq2)
+  (accumulate cons seq2 seq1))
+
+(define (length sequence)
+  (accumulate (lambda (elem acc) (+ acc 1)) 0 sequence))
+
+
+; ex 2.34
+
+; Evaluate a polynomial in x using Horner's Rule
+
+(define (horner-eval x coeff)
+  (accumulate
+    (lambda (this-coeff higher-terms) (+ this-coeff (* x higher-terms)))
+    0
+    coeff))
+
+
+; ex 2.36
+
+; note: (map car (list (list 1 2) (list 3 4))) - gives you first element of
+;  each sub-sequence, 1 and 3, while (map cdr (list (list 1 2) (list 3 4)))
+;  gives you the sequences of sub-sequences with the first element chopped off
+
+(define (accumulate-n op init seqs)
+  (if (null? (car seqs)) ()
+    (cons (accumulate op init (map car seqs))
+          (accumulate-n op init (map cdr seqs)))))
+
+
+
+
 
 
 
