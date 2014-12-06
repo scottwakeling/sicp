@@ -246,6 +246,68 @@
         (else (+ (branch-weight (left-branch mobile))
                   (branch-weight (right-branch mobile))))))
 
+(define (branch-balanced? branch)
+   (cond (pair? (branch-payload branch))
+       (mobile-balanced? (branch-payload branch))
+       (else (true))))
+
 (define (mobile-balanced? m)
-  (= (branch-torque (left-branch m)) (branch-torque (right-branch m)))
+  (and (= (branch-torque (left-branch m))
+          (branch-torque (right-branch m))
+          (branch-balanced? (left-branch mobile))
+          (branch-balanced? (right-branch mobile))
+          )))
+
+; ex 2.30
+
+(define (square-tree tree)
+  (cond ((null? tree) ())
+    ((not (pair? tree)) (* tree tree))
+    (else (cons (square-tree (car tree))
+                (square-tree (cdr tree))))))
+
+; or, regard the tree as a sequence of sub-trees and map a lambda over it..
+(define (square-tree tree)
+  (map (lambda (sub-tree)
+        (if (pair? sub-tree)
+          (square-tree sub-tree)  ; recursively scale this sub-tree
+          (* sub-tree sub-tree))) ; leaf node, square it
+        tree))
+
+
+; ex 2.31
+
+; map a lambda over a tree
+(define (tree-map proc tree)
+  (cond ((null? tree) ())
+    ((not (pair? tree)) (proc tree))
+    (else (cons (tree-map proc (car tree))
+                (tree-map proc (cdr tree))))))
+
+; e.g. square..
+(define (square-tree tree)
+  (tree-map square tree)
 )
+
+
+; ex 2.32
+
+; Calculate the power-set of the set S
+;  http://en.wikipedia.org/wiki/Power_set
+(define (power-set S)
+  (if (null? S)
+    (list ())
+    (let ((T (power-set (cdr S))))
+      (append T (map (lambda (x) (cons (car S) x)) T)))))
+
+
+; 2.2.3 - Sequences as Conventional Interfaces
+
+
+
+
+
+
+
+
+;
