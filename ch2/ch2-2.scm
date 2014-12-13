@@ -348,6 +348,92 @@
           (accumulate-n op init (map cdr seqs)))))
 
 
+; ex 2.37
+
+(define (dot-product v w)
+  (accumulate + 0 (map * v w)))
+
+(define (matrix-*-vector m v)
+  (map (lambda (row) (accumulate + 0 (map * v row))) m))
+
+(define (transpose mat)
+  (accumulate-n cons () mat))
+
+(define (matrix-*-matrix m n)
+  (let ((cols (transpose n)))
+    (map (lambda (row) (matrix-*-vector cols row)) m)))
+
+
+; ex 2.38
+
+(fold-left / 1 (list 1 2 3))
+; 1/6 (1 divided by 1, divided by 2, divided by 3)
+
+(fold-right / 1 (list 1 2 3))
+; 3/2 (3 divided by 1, divided by 2, dividied by 1)
+
+(fold-right / 2 (list 1 2 12))
+; 3 (12 divided by 2, divided by 2, divided by 1)
+
+(fold-right list () (list 1 2 3))
+; (1 (2 (3 ())))
+
+(fold-left list () (list 1 2 3))
+; (((() 1) 2) 3)
+
+; op should be commutative for fold-right to produce the same result as
+;  fold-left, i.e. A op B = B op A, e.g. MULTIPLY
+
+
+; ex 2.39
+
+(define (reverse sequence)
+  (fold-right (lambda (x y) (append y (list x))) () sequence))
+
+(define (reverse sequence)
+  (fold-left (lambda (x y) (cons y x)) () sequence))
+
+
+; ex 2.40
+
+(define (flatmap proc seq)
+  (accumulate append () (map proc seq)))
+
+(define (remove item sequence)
+  (filter (lambda (x) (not (= x item)))
+    sequence))
+
+(define (permutations s)
+  (if (null? s)
+      (list ())
+      (flatmap (lambda (x)
+                  (map (lambda (p) (cons x p))
+                        (permutations (remove x s))))
+                s)))
+
+(define (enumerate-interval low high)
+  (if (> low high)
+    ()
+    (cons low (enumerate-interval (+ low 1) high))))
+
+(define (prime-sum? pair)
+  (prime? (+ (car pair) (cadr pair))))
+
+(define (make-pair-sum pair)
+  (list (car pair) (cadr pair) (+ (car pair) (cadr pair))))
+
+(define (prime-sum-pairs n)
+  (map make-pair-sum
+    (filter prime-sum?
+      (flatmap
+        (lambda (i)
+          (map (lambda (j) (list i j))
+               (enumerate-interval 1 (- i 1))))
+        (enumerate-interval 1 n)))))
+
+(define (unique-pairs n)
+  ...
+)
 
 
 
