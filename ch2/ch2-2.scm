@@ -394,7 +394,7 @@
   (fold-left (lambda (x y) (cons y x)) () sequence))
 
 
-; ex 2.40
+; ex 2.40 - working
 
 (define (flatmap proc seq)
   (accumulate append () (map proc seq)))
@@ -416,6 +416,20 @@
     ()
     (cons low (enumerate-interval (+ low 1) high))))
 
+(define (smallest-divisor n)
+  (find-divisor n 2))
+
+(define (find-divisor n test-divisor)
+  (cond ((> (square test-divisor) n) n)
+  ((divides? test-divisor n) test-divisor)
+  (else (find-divisor n (+ test-divisor 1)))))
+
+(define (divides? a b)
+  (= (remainder b a) 0))
+
+(define (prime? n)
+  (= n (smallest-divisor n)))
+
 (define (prime-sum? pair)
   (prime? (+ (car pair) (cadr pair))))
 
@@ -431,9 +445,94 @@
                (enumerate-interval 1 (- i 1))))
         (enumerate-interval 1 n)))))
 
+; ex 2.40 - solution
+
 (define (unique-pairs n)
-  ...
+  (flatmap
+   (lambda (i)
+     (map (lambda (j) (list i j))
+	  (enumerate-interval 1 (- i 1))))
+   (enumerate-interval 1 n)))
+
+(define (prime-sum-pairs-new n)
+  (map make-pair-sum
+    (filter prime-sum?
+      (unique-pairs n))))
+
+
+; ex 2.41
+
+; returns the set of triples such that (1<=i<j<k<=N)
+; e.g. (triples 4)
+;   ((2 3 4) (1 3 4) (1 2 4) (1 2 3))
+(define (triples N)
+  (filter (length? 3) (power-set (enumerate-interval 1 N))))
+
+; return true is the triple t sums to S
+(define triple-sums-to?
+  (lambda (S)
+    (lambda (t)
+      (= S (+ (car t) (car (cdr t)) (car (cdr (cdr t))))))))
+
+; returns the set of triples such that (1<=i<j<k<=N) and (i+j+k=S)
+(define (ordered-triples N S)
+    (filter (triple-sums-to? S)
+      (triples N)))
+
+
+; ex 2.42 - N-Queens Problem
+;  http://en.wikipedia.org/wiki/Eight_queens_puzzle
+
+(define empty-board ())
+
+(define (adjoin-position row col positions)
+  (cons (list row col) positions))
+
+(define (row position)
+  (car position))
+
+(define (col position)
+  (car (cdr position)))
+
+(define (pos-vector pos1 pos2)
+  (list (- (row pos2) (row pos1)) (- (col pos2) (col pos1)))
 )
+
+(define (attacks? pos1)
+  (lambda (pos2)
+    (or
+      (= (row pos1) (row pos2))
+      (= (col pos1) (col pos2))
+      (= (abs (row (pos-vector pos1 pos2))) (abs (col (pos-vector pos1 pos2))))))
+)
+
+(define (row-for-col col positions)
+  (car (car (filter (lambda (pos) (= col (car (cdr pos)))) positions)))
+)
+
+(define (safe? k positions)
+  (= 1
+    (length (filter
+      (attacks? (list (row-for-col k positions) k))
+      positions)))
+)
+
+(define (queens board-size)
+  (define (queen-cols k)
+    (if (= k 0)
+      (list empty-board)
+      (filter
+        (lambda (positions) (safe? k positions))
+        (flatmap
+          (lambda (rest-of-queens)
+            (map (lambda (new-row)
+              (adjoin-position new-row k rest-of-queens))
+            (enumerate-interval 1 board-size)))
+          (queen-cols (- k 1))))))
+  (queen-cols board-size))
+
+; e.g. (length (queens 8)) = 92, as expected
+
 
 
 
