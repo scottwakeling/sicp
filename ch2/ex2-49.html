@@ -1,0 +1,66 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <style>
+      body {
+        margin: 50px;
+        padding: 0px;
+      }
+      #picture-frame {
+        text-align: center;
+      }
+      canvas {
+        display: inline;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="picture-frame">
+      <canvas id="myCanvas" width="800" height="800">
+      </canvas>
+    </div>
+    <script>
+      var canvas = document.getElementById('myCanvas');
+      var context = canvas.getContext('2d');
+
+      context.beginPath();
+      // (wave (make-frame (make-vect 0 0) (make-vect 800 0) (make-vect 0 800)))
+      context.moveTo(200.,800.);
+      context.lineTo(296.,504.);
+      context.moveTo(320.,800.);
+      context.lineTo(400.,600.);
+      context.moveTo(400.,600.);
+      context.lineTo(496.,800.);
+      context.moveTo(600.,800.);
+      context.lineTo(560.,400.);
+      context.moveTo(560.,400.);
+      context.lineTo(800.,560.);
+      context.moveTo(800.,400.);
+      context.lineTo(600.,304.);
+      context.moveTo(600.,304.);
+      context.lineTo(496.,304.);
+      context.moveTo(496.,304.);
+      context.lineTo(600.,200.);
+      context.moveTo(600.,200.);
+      context.lineTo(496.,0.);
+      context.moveTo(320.,0.);
+      context.lineTo(240.,200.);
+      context.moveTo(240.,200.);
+      context.lineTo(320.,304.);
+      context.moveTo(320.,304.);
+      context.lineTo(200.,304.);
+      context.moveTo(200.,304.);
+      context.lineTo(160.,400.);
+      context.moveTo(160.,400.);
+      context.lineTo(0.,240.);
+      context.moveTo(296.,504.);
+      context.lineTo(240.,400.);
+      context.moveTo(240.,400.);
+      context.lineTo(96.,504.);
+      context.moveTo(96.,504.);
+      context.lineTo(0.,400.);
+      // end (wave (make-frame (make-vect 0 0) (make-vect 800 0) (make-vect 0 800)))
+      context.stroke();
+    </script>
+  </body>
+</html>

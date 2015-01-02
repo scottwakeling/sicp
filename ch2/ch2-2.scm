@@ -534,11 +534,226 @@
 ; e.g. (length (queens 8)) = 92, as expected
 
 
+; 2.2.4 - MIT Picture Language
+
+(define (flipped-pairs painter)
+  (let ((painter2 (beside painter (flip-vert painter))))
+    (below painter2 painter2)))
+
+(define (right-split painter n)
+  (if (= n 0)
+    painter
+    (let ((smaller (right-split painter (- n 1))))
+      (beside painter (below smaller smaller)))))
+
+(define (corner-split painter n)
+  (if (= n 0)
+    painter
+    (let ((up (up-split painter (- n 1)))
+          (right (right-split painter (- n 1))))
+        (let ((top-left (beside up up))
+              (bottom-right (below right right))
+              (corner (corner-split painter (- n 1))))
+          (beside (below painter top-left)
+                  (below bottom-right corner))))))
 
 
+; Escher
+
+(define (square-limit painter n)
+  (let ((quarter (corner-split painter n)))
+    (let ((half (beside (flip-horiz quarter) quarter)))
+      (below (flip-vert half) half))))
 
 
+; ex 2.44
 
+(define (up-split painter n)
+  (if (= n 0)
+    painter
+    (let ((smaller (up-split painter (- n 1))))
+      (below painter (beside smaller smaller)))))
+
+
+; A higher-order approach to flipped-pairs/square-limit etc.
+
+(define (square-of-four tl tr bl br)
+  (lambda (painter)
+    (let ((top (beside (tl painter) (tr painter)))
+          (bottom (beside (bl painter) (br painter))))
+      (below bottom top))))
+
+(define flipper-pairs
+  (square-of-four identity flip-vert identity flip-vert))
+
+(define (square-limit painter n)
+  (let ((combine4 (square-of-four flip-horiz identity rotate180 flip-vert)))
+    (combine4 (corner-split painter n))))
+
+
+; ex 2.45
+
+(define right-split (split beside below))
+(define up-split (split below beside))
+
+(define (split first second)
+  (lambda (painter)
+    (lambda (n)
+      (if (= n 0)
+        painter
+        (let ((smaller ((split first second) painter (- n 1))))
+          (first painter (second smaller smaller)))))))
+
+
+; Frames
+
+(define (frame-coord-map frame)
+  (lambda (v)
+    (add-vect
+      (origin-frame frame)
+      (add-vect (scale-vect (xcor-vect v)
+                            (edge1-frame frame))
+                (scale-vect (ycor-vect v)
+                            (edge2-frame frame))))))
+
+
+; ex 2.46
+
+(define make-vect cons)
+(define (xcor-vect v) (car v))
+(define (ycor-vect v) (cdr v))
+(define (add-vect v0 v1)
+  (make-vect (+ (xcor-vect v0) (xcor-vect v1))
+              (+ (ycor-vect v0) (ycor-vect v1))))
+(define (sub-vect v0 v1)
+  (make-vect (- (xcor-vect v0) (xcor-vect v1))
+              (- (ycor-vect v0) (ycor-vect v1))))
+(define (scale-vect s v)
+  (make-vect (* s (xcor-vect v))
+              (* s (ycor-vect v))))
+(define (mid-point-vect v0 v1)
+    (define (avg x y) (/ (+ x y) 2))
+    (make-vect (avg (xcor-vect v0) (xcor-vect v1))
+               (avg (ycor-vect v0) (ycor-vect v1))))
+(define (print-vect v)
+  (display "(")
+  (display (xcor-vect v))
+  (display ",")
+  (display (ycor-vect v))
+  (display ")"))
+
+
+; ex 2.47
+
+(define (make-frame origin edge1 edge2)
+  (list origin edge1 edge2))
+
+(define (make-frame origin edge1 edge2)
+  (cons origin (cons edge1 edge2)))
+
+; These selectors work for both constructor
+(define (origin-frame frame)
+  (car frame))
+(define (edge1-frame frame)
+  (car (cdr frame)))
+(define (edge2-frame frame)
+  (cdr (cdr frame)))
+(define (br-frame frame)
+  (add-vect (origin-frame frame) (edge1-frame frame)))
+(define (tr-frame frame)
+  (add-vect (edge2-frame frame)
+            (add-vect (origin-frame frame) (edge1-frame frame))))
+(define (tl-frame frame)
+  (add-vect (origin-frame frame) (edge2-frame frame)))
+
+
+; HTML5 translator impl (draw-line, draw-image)
+
+(define (draw-line x y)
+  (display "context.moveTo")
+  (print-vect x)
+  (display ";\n")
+  (display "context.lineTo")
+  (print-vect y)
+  (display ";\n")
+)
+
+
+; ex 2.48
+
+(define make-segment cons)
+(define (start-segment segment)
+  (car segment))
+(define (end-segment segment)
+    (cdr segment))
+
+
+; Painters
+
+(define (segments->painter segment-list)
+  (lambda (frame)
+    (for-each
+      (lambda (segment)
+        (draw-line
+          ((frame-coord-map frame) (start-segment segment))
+          ((frame-coord-map frame) (end-segment segment))))
+      segment-list)))
+
+
+; ex 2.49
+
+(define (frame->painter frame)
+  (draw-line (origin-frame frame) (br-frame frame))
+  (draw-line (br-frame frame) (tr-frame frame))
+  (draw-line (tr-frame frame) (tl-frame frame))
+  (draw-line (tl-frame frame) (origin-frame frame))
+)
+
+(define (frame-x->painter frame)
+  (frame->painter frame)
+  (draw-line (origin-frame frame) (tr-frame frame))
+  (draw-line (tl-frame frame) (br-frame frame))
+)
+
+(define (frame-diamond->painter frame)
+  (frame->painter frame)
+  (draw-line
+    (mid-point-vect (origin-frame frame) (tl-frame frame))
+    (mid-point-vect (origin-frame frame) (br-frame frame)))
+  (draw-line
+    (mid-point-vect (origin-frame frame) (br-frame frame))
+    (mid-point-vect (br-frame frame) (tr-frame frame)))
+  (draw-line
+    (mid-point-vect (br-frame frame) (tr-frame frame))
+    (mid-point-vect (tr-frame frame) (tl-frame frame)))
+  (draw-line
+    (mid-point-vect (tr-frame frame) (tl-frame frame))
+    (mid-point-vect (origin-frame frame) (tl-frame frame)))
+)
+
+(define wave
+  (segments->painter
+   (list (make-segment (make-vect 0.25 1.00) (make-vect 0.37 0.63)) ;1
+         (make-segment (make-vect 0.40 1.00) (make-vect 0.50 0.75)) ;2
+         (make-segment (make-vect 0.50 0.75) (make-vect 0.62 1.00)) ;3
+         (make-segment (make-vect 0.75 1.00) (make-vect 0.70 0.50)) ;4
+         (make-segment (make-vect 0.70 0.50) (make-vect 1.00 0.70)) ;5
+         (make-segment (make-vect 1.00 0.50) (make-vect 0.75 0.38)) ;6
+         (make-segment (make-vect 0.75 0.38) (make-vect 0.62 0.38)) ;7
+         (make-segment (make-vect 0.62 0.38) (make-vect 0.75 0.25)) ;8
+         (make-segment (make-vect 0.75 0.25) (make-vect 0.62 0.00)) ;9
+         (make-segment (make-vect 0.40 0.00) (make-vect 0.30 0.25)) ;10
+         (make-segment (make-vect 0.30 0.25) (make-vect 0.40 0.38)) ;11
+         (make-segment (make-vect 0.40 0.38) (make-vect 0.25 0.38)) ;12
+         (make-segment (make-vect 0.25 0.38) (make-vect 0.20 0.50)) ;13
+         (make-segment (make-vect 0.20 0.50) (make-vect 0.00 0.30)) ;14
+         (make-segment (make-vect 0.37 0.63) (make-vect 0.30 0.50)) ;15
+         (make-segment (make-vect 0.30 0.50) (make-vect 0.12 0.63)) ;16
+         (make-segment (make-vect 0.12 0.63) (make-vect 0.00 0.50)) ;17
+         )))
+
+; e.g.
+; (wave (make-frame (make-vect 0 0) (make-vect 800 0) (make-vect 0 800)))
 
 
 
