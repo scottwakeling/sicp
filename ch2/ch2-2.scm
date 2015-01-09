@@ -583,7 +583,7 @@
           (bottom (beside (bl painter) (br painter))))
       (below bottom top))))
 
-(define flipper-pairs
+(define flipped-pairs
   (square-of-four identity flip-vert identity flip-vert))
 
 (define (square-limit painter n)
@@ -678,6 +678,18 @@
   (display ";\n")
 )
 
+(define (draw-image pos size)
+  (display "context.drawImage(imageObj, ")
+  (display (xcor-vect pos))
+  (display ", ")
+  (display (ycor-vect pos))
+  (display ", ")
+  (display (xcor-vect size))
+  (display ", ")
+  (display (ycor-vect size))
+  (display ");\n")
+)
+
 
 ; ex 2.48
 
@@ -754,6 +766,163 @@
 
 ; e.g.
 ; (wave (make-frame (make-vect 0 0) (make-vect 800 0) (make-vect 0 800)))
+
+
+; Transforming and combining painters
+
+(define (transform-painter painter origin corner1 corner2)
+  (lambda (frame)
+    (let ((m (frame-coord-map frame)))
+      (let ((new-origin (m origin)))
+        (painter
+          (make-frame new-origin
+            (sub-vect (m corner1) new-origin)
+            (sub-vect (m corner2) new-origin)))))))
+
+(define (flip-vert painter)
+  (transform-painter painter
+    (make-vect 0.0 1.0)
+    (make-vect 1.0 1.0)
+    (make-vect 0.0 0.0)))
+; e.g. ((flip-vert wave) (make-frame (make-vect 0 0) (make-vect 800 0) (make-vect 0 800)))
+
+(define (shrink-to-upper-right painter)
+  (transform-painter painter
+    (make-vect 0.5 0.0)
+    (make-vect 1.0 0.0)
+    (make-vect 0.5 0.5)))
+; e.g. ((shrink-to-upper-right wave) (make-frame (make-vect 0 0) (make-vect 800 0) (make-vect 0 800)))
+
+(define (rotate90 painter)
+  (transform-painter painter
+    (make-vect 0.0 1.0)
+    (make-vect 0.0 0.0)
+    (make-vect 1.0 1.0)))
+; e.g. rotate90 wave) (make-frame (make-vect 0 0) (make-vect 800 0) (make-vect 0 800)))
+
+(define (squash-inwards painter)
+  (transform-painter painter
+    (make-vect 0.0 0.0)
+    (make-vect 0.65 0.35)
+    (make-vect 0.35 0.65)))
+; e.g. ((squash-inwards wave) (make-frame (make-vect 0 0) (make-vect 800 0) (make-vect 0 800)))
+
+(define (beside painter1 painter2)
+  (let ((split-point (make-vect 0.5 0.0)))
+    (let ((paint-left
+          (transform-painter painter1
+                              (make-vect 0.0 0.0)
+                              split-point
+                              (make-vect 0.0 1.0)))
+        (paint-right
+          (transform-painter painter2
+                              split-point
+                              (make-vect 1.0 0.0)
+                              (make-vect 0.5 1.0))))
+      (lambda (frame)
+        (paint-left frame)
+        (paint-right frame)))))
+; e.g. ((beside wave wave) (make-frame (make-vect 0 0) (make-vect 800 0) (make-vect 0 800)))
+
+
+; ex 2.50
+
+(define (flip-horiz painter)
+  (transform-painter painter
+    (make-vect 1.0 0.0)
+    (make-vect 0.0 0.0)
+    (make-vect 1.0 1.0)))
+
+(define (rotate180 painter)
+  (transform-painter painter
+    (make-vect 1.0 1.0)
+    (make-vect 0.0 1.0)
+    (make-vect 1.0 0.0)))
+
+(define (rotate270 painter)
+  (transform-painter painter
+    (make-vect 1.0 0.0)
+    (make-vect 1.0 1.0)
+    (make-vect 0.0 0.0)))
+
+; x' = x * (cos theta) - y * (sin theta)
+; y' = x * (sin theta) + y * (cos theta)
+(define (rot-vect v radians)
+  (make-vect (- (* (cos radians) (xcor-vect v)) (* (sin radians) (ycor-vect v)))
+             (+ (* (sin radians) (xcor-vect v)) (* (cos radians) (ycor-vect v))))
+)
+
+(define (rotate radians painter)
+  (let ((cos-r (cos radians))
+        (sin-r (sin radians)))
+        (transform-painter painter
+      (add-vect (rot-vect (make-vect -0.5 -0.5) radians) (make-vect 0.5 0.5))
+      (add-vect (rot-vect (make-vect 0.5 -0.5) radians) (make-vect 0.5 0.5))
+      (add-vect (rot-vect (make-vect -0.5 0.5) radians) (make-vect 0.5 0.5)))))
+
+
+; ex 2.51
+
+(define (below painter1 painter2)
+  (let ((split-point (make-vect 0.0 0.5)))
+    (let ((paint-top
+          (transform-painter painter1
+                              (make-vect 0.0 0.0)
+                              (make-vect 1.0 0.0)
+                              split-point))
+        (paint-bottom
+          (transform-painter painter2
+                              split-point
+                              (make-vect 1.0 0.5)
+                              (make-vect 0.0 1.0))))
+      (lambda (frame)
+        (paint-top frame)
+        (paint-bottom frame)))))
+
+(define (below-r painter1 painter2)
+  (rotate90
+    (beside (rotate270 painter1) (rotate270 painter2)))
+)
+
+
+; ex 2.52
+
+(define (square-limit-join painter n)
+  (let ((combine4 (square-of-four flip-horiz identity rotate180 flip-vert)))
+    (combine4 (corner-split painter n))))
+
+
+; Images - wip
+
+(define (image->painter origin size)
+  (lambda (frame)
+        (draw-image
+          ((frame-coord-map frame) origin)
+          ((frame-coord-map frame) (add-vect origin size))
+        ))
+
+(define (image->painter origin size)
+  (lambda (frame)
+    (let (
+      (origin-t ((frame-coord-map frame) origin))
+      (size-t ((frame-coord-map frame) size))
+      )
+        (draw-image
+          origin-t
+          (add-vect origin-t size-t)
+        ))))
+
+(define max-image
+  (image->painter (make-vect 0.0 0.0) (make-vect 1.0 1.0)))
+
+
+
+
+
+
+
+
+
 
 
 
